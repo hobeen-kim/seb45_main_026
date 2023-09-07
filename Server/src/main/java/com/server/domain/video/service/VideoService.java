@@ -7,6 +7,7 @@ import com.server.domain.category.repository.CategoryRepository;
 import com.server.domain.member.entity.Member;
 import com.server.domain.member.repository.MemberRepository;
 import com.server.domain.reply.controller.convert.ReplySort;
+import com.server.domain.reply.dto.ReplyCreateResponse;
 import com.server.domain.reply.dto.ReplyCreateServiceApi;
 import com.server.domain.reply.dto.ReplyInfo;
 import com.server.domain.reply.entity.Reply;
@@ -27,10 +28,7 @@ import com.server.global.exception.businessexception.categoryexception.CategoryN
 import com.server.global.exception.businessexception.memberexception.MemberAccessDeniedException;
 import com.server.global.exception.businessexception.memberexception.MemberNotFoundException;
 import com.server.global.exception.businessexception.replyException.ReplyNotValidException;
-import com.server.global.exception.businessexception.videoexception.VideoNameDuplicateException;
-import com.server.global.exception.businessexception.videoexception.VideoAccessDeniedException;
-import com.server.global.exception.businessexception.videoexception.VideoClosedException;
-import com.server.global.exception.businessexception.videoexception.VideoNotFoundException;
+import com.server.global.exception.businessexception.videoexception.*;
 import com.server.module.s3.service.AwsService;
 import com.server.module.s3.service.dto.FileType;
 import com.server.module.s3.service.dto.ImageType;
@@ -73,7 +71,7 @@ public class VideoService {
 
         Member member = verifiedMemberOrNull(loginMemberId);
 
-        Page<Video> videos = videoRepository.findAllByCategoryPaging(request.toDataRequest());
+        Page<Video> videos = videoRepository.findAllByCond(request.toDataRequest());
 
         List<Boolean> isPurchaseInOrder = isPurchaseInOrder(member, videos.getContent());
 
@@ -115,6 +113,8 @@ public class VideoService {
     @Transactional
     public VideoCreateUrlResponse getVideoCreateUrl(Long loginMemberId, VideoCreateUrlServiceRequest request) {
 
+        checkValidVideoName(request.getFileName());
+
         Member member = verifiedMemberWithChannel(loginMemberId);
 
         checkDuplicateVideoNameInChannel(loginMemberId, request.getFileName());
@@ -134,6 +134,12 @@ public class VideoService {
                 .videoUrl(getUploadVideoUrl(loginMemberId, location))
                 .thumbnailUrl(getUploadThumbnailUrl(loginMemberId, location, request.getImageType()))
                 .build();
+    }
+
+    private void checkValidVideoName(String fileName) {
+        if (fileName.contains("/")) {
+            throw new VideoNameNotValidException("/");
+        }
     }
 
     @Transactional
@@ -186,10 +192,7 @@ public class VideoService {
 
         Video video = verifedVideo(loginMemberId, videoId);
 
-        awsService.deleteFile(loginMemberId, video.getVideoName(), FileType.VIDEO);
-        awsService.deleteFile(loginMemberId, video.getThumbnailFile(), FileType.THUMBNAIL);
-
-        videoRepository.delete(video);
+        video.close();
     }
 
     private List<Boolean> isPurchaseInOrder(Member loginMember, List<Video> content) {
@@ -409,32 +412,36 @@ public class VideoService {
         return true;
     }
 
-    public Page<ReplyInfo> getReplies(Long videoId, int page, int size, ReplySort replySort) {
-
+    public Page<ReplyInfo> getReplies(Long videoId, int page, int size, ReplySort replySort, Integer star) {
         Sort sort = Sort.by(Sort.Direction.DESC, replySort.getSort());
+        PageRequest pageRequest = PageRequest.of(page, size, sort); //
 
-        PageRequest pageRequest = PageRequest.of(page, size, sort);
-
-        return replyRepository.findAllByVideoIdPaging(videoId, pageRequest);
+        if (star != null) { //(별점 필터링 o)
+            return replyRepository.findAllByVideoIdAndStarOrStarIsNull(videoId, star, pageRequest);
+        } else { //(별점 필터링 x)
+            return replyRepository.findAllByVideoIdPaging(videoId, pageRequest);
+        }
     }
 
-    public Long createReply(Long loginMemberId, Long videoId, ReplyCreateServiceApi response) {
+    public Long createReply(Long loginMemberId, Long videoId, ReplyCreateServiceApi request) {
+        Member member = memberRepository.findById(loginMemberId).orElseThrow(() -> new MemberAccessDeniedException());
+        Integer star = request.getStar();
 
-        memberRepository.findById(loginMemberId).orElseThrow(() -> new MemberAccessDeniedException());
-
-        Integer star = response.getStar();
-
-        if (star < 1 || star > 5) {
+        if (star < 1 || star > 10) {
             throw new ReplyNotValidException();
         }
 
-        videoRepository.findById(videoId).orElseThrow(() -> new VideoNotFoundException());
+        Video video = videoRepository.findById(videoId).orElseThrow(() -> new VideoNotFoundException());
 
-        Reply reply = Reply.builder()
-                .content(response.getContent())
-                .star(response.getStar())
+        ReplyCreateResponse response = ReplyCreateResponse.builder()
+                .content(request.getContent())
+                .star(request.getStar())
+                .member(member)
+                .video(video)
                 .build();
 
-        return replyRepository.save(reply).getReplyId();
+        Reply savedReply = replyRepository.save(response.toEntity());
+
+        return savedReply.getReplyId();
     }
 }

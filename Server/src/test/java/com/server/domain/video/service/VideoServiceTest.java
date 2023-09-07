@@ -475,6 +475,22 @@ class VideoServiceTest extends ServiceTest {
     }
 
     @Test
+    @DisplayName("비디오 put url 요청 시 문자 \"/\" 가 포함되면 VideoNameNotValidException 이 발생한다.")
+    void getVideoCreateUrlVideoNameNotValidException() {
+        //given
+        Member owner = createMemberWithChannel();
+
+        VideoCreateUrlServiceRequest request = VideoCreateUrlServiceRequest.builder()
+                .imageType(ImageType.PNG)
+                .fileName("test/test")
+                .build();
+
+        //when & then
+        assertThatThrownBy(() -> videoService.getVideoCreateUrl(owner.getMemberId(), request))
+                .isInstanceOf(VideoNameNotValidException.class);
+    }
+
+    @Test
     @DisplayName("비디오 put url 을 받을 때 채널 내 비디오명이 중복되면 VideoNameDuplicateException 이 발생한다.")
     void getVideoCreateUrlVideoNameDuplicateException() {
         //given
@@ -736,19 +752,18 @@ class VideoServiceTest extends ServiceTest {
     }
 
     @Test
-    @DisplayName("video 소유자는 video 를 삭제할 수 있다.")
+    @DisplayName("video 소유자는 video 를 삭제할 수 있다. 삭제하면 video status 가 close 가 된다.")
     void deleteVideo() {
         //given
         Member owner = createAndSaveMember();
         Channel channel = createAndSaveChannel(owner);
-
         Video video = createAndSaveVideo(channel);
 
         //when
         videoService.deleteVideo(owner.getMemberId(), video.getVideoId());
 
         //then
-        assertThat(videoRepository.findById(video.getVideoId()).isEmpty()).isTrue();
+        assertThat(video.getVideoStatus()).isEqualTo(VideoStatus.CLOSED);
     }
 
     @Test

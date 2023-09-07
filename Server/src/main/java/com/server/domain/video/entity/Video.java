@@ -156,9 +156,17 @@ public class Video extends BaseEntity implements Rewardable {
         this.videoStatus = VideoStatus.CLOSED;
     }
 
+    public boolean isOwnedBy(Long memberId) {
+        return this.channel.getMember().getMemberId().equals(memberId);
+    }
+
     private void checkIsUploading() {
         if(this.videoStatus != VideoStatus.UPLOADING) {
             throw new VideoAlreadyCreatedException();
         }
+    }
+
+    public Long getMemberId() {
+        return this.channel.getMember().getMemberId();
     }
 }
