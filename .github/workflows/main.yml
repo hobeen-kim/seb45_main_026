@@ -66,7 +66,7 @@ jobs:
                 'sudo docker tag sksjsksh32/prometheus:latest prometheus',
                 'sudo docker image rm sksjsksh32/prometheus:latest',
                 'sudo docker image prune -f',
-                'sudo docker run -d -p 80:8080 --name prometheus -v /home/ubuntu/logs:/app/logs my-java-app -e SPRING_PROFILES_ACTIVE=prod prometheus'
+                'sudo docker run -d -p 80:8080 --name prometheus -v /home/ubuntu/logs:/app/logs -e SPRING_PROFILES_ACTIVE=prod prometheus'
               ]"
             fi
           done <<< "$INSTANCE_DATA"
