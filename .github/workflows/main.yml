@@ -53,9 +53,10 @@ jobs:
             docker-layer-${{ runner.os }}-
       - name: Docker build
         run: |
+          mkdir -p /tmp/docker-layers
           docker load -i /tmp/docker-layers/prometheus.tar || true
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
-          docker build -t prometheus -f Server/Dockerfile Server
+          docker build --cache-from=prometheus:latest -t prometheus -f Server/Dockerfile Server
           docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
           docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
