@@ -47,7 +47,8 @@ jobs:
       - name: Docker build
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
-          docker build -t prometheus -f Server/Dockerfile Server
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest || true
+          docker build --cache-from=${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest -t prometheus -f Server/Dockerfile Server
           docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
           docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
