@@ -54,7 +54,6 @@ jobs:
             docker-layer-${{ runner.os }}-
       - name: Docker build
         run: |
-          mkdir -p /tmp/docker-layers
           docker load -i /tmp/docker-layers/prometheus.tar || true
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
           docker build --cache-from=prometheus:latest -t prometheus -f Server/Dockerfile Server
