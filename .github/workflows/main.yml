@@ -31,6 +31,9 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testA
+      - name: Record failure for testA
+        if: failure()
+        run: echo "TestA failed" > testA.fail
       - run: echo "done" > testA.done
           
   testB:
@@ -56,6 +59,9 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testB
+      - name: Record failure for testB
+        if: failure()
+        run: echo "TestB failed" > testB.fail
       - run: echo "done" > testB.done
 
   testC:
@@ -81,6 +87,9 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testC
+      - name: Record failure for testC
+        if: failure()
+        run: echo "TestC failed" > testC.fail
       - run: echo "done" > testC.done
           
 
@@ -109,10 +118,21 @@ jobs:
           ./gradlew build -PdoNotRunTests
       - name: Wait for tests to complete
         run: |
-          while [ ! -f "testA.done" ] || [ ! -f "testB.done" ] || [ ! -f "testC.done" ]; do
+          while true; do
+            # *.fail 파일이 하나라도 있으면 즉시 종료
+            if [ -f "testA.fail" ] || [ -f "testB.fail" ] || [ -f "testC.fail" ]; then
+              rm testA.done testB.done testC.done testA.fail testB.fail testC.fail 2>/dev/null
+              exit 1
+            fi
+            
+            # *.done 파일들이 모두 있다면 루프 종료
+            if [ -f "testA.done" ] && [ -f "testB.done" ] && [ -f "testC.done" ]; then
+              break
+            fi
             sleep 10
           done
           rm testA.done testB.done testC.done
+
       - name: Docker build
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
