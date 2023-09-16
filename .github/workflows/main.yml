@@ -94,6 +94,12 @@ jobs:
         with:
           name: snapshot-jar
           path: Server/build/libs/
+      - name: Copy pem
+        env:
+          OCCUPY_PEM: ${{ secrets.OCCUPY_PEM }}
+        run:  |
+          echo "$OCCUPY_PEM" > Server/src/main/resources/prometheus.pem
+          chmod 400 Server/src/main/resources/prometheus.pem
       - name: Docker build
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
