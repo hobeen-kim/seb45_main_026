@@ -63,15 +63,15 @@ jobs:
         with:
           occupy-secret: ${{ secrets.OCCUPY_SECRET }}
           occupy-pem: ${{ secrets.OCCUPY_PEM }}
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+      # - name: Cache Gradle dependencies
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       ~/.gradle/caches
+      #       ~/.gradle/wrapper
+      #     key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+      #     restore-keys: |
+      #       gradle-${{ runner.os }}-
       - name: Build with Gradle
         run: |
           cd Server
