@@ -1,12 +1,9 @@
 name: Java CI with Gradle
-
-
 on:
   push:
     branches: [ beDev ]
   pull_request:
     branches: [ beDev ]
-
 jobs:
   testA:
     runs-on: ubuntu-latest
@@ -31,10 +28,6 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testA
-      - name: Record failure for testA
-        if: failure()
-        run: echo "TestA failed" > testA.fail
-      - run: echo "done" > testA.done
           
   testB:
     runs-on: ubuntu-latest
@@ -59,11 +52,6 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testB
-      - name: Record failure for testB
-        if: failure()
-        run: echo "TestB failed" > testB.fail
-      - run: echo "done" > testB.done
-
   testC:
     runs-on: ubuntu-latest
     steps:
@@ -87,12 +75,7 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testC
-      - name: Record failure for testC
-        if: failure()
-        run: echo "TestC failed" > testC.fail
-      - run: echo "done" > testC.done
           
-
   build:
     runs-on: ubuntu-latest
     steps:
@@ -111,28 +94,49 @@ jobs:
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             gradle-${{ runner.os }}-
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
       - name: Build with Gradle
         run: |
           cd Server
           chmod +x gradlew
           ./gradlew build -PdoNotRunTests
-      - name: Wait for tests to complete
+      - name: Archive SNAPSHOT jar
+        uses: actions/upload-artifact@v2
+        with:
+          name: snapshot-jar
+          path: Server/build/libs/*-SNAPSHOT.jar
+  cd:
+    needs: 
+    - testA
+    - testB
+    - testC
+    - build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: make dir
         run: |
-          while true; do
-            # *.fail 파일이 하나라도 있으면 즉시 종료
-            if [ -f "testA.fail" ] || [ -f "testB.fail" ] || [ -f "testC.fail" ]; then
-              rm testA.done testB.done testC.done testA.fail testB.fail testC.fail 2>/dev/null
-              exit 1
-            fi
-            
-            # *.done 파일들이 모두 있다면 루프 종료
-            if [ -f "testA.done" ] && [ -f "testB.done" ] && [ -f "testC.done" ]; then
-              break
-            fi
-            sleep 10
-          done
-          rm testA.done testB.done testC.done
-
+          mkdir -p Server/build/libs
+      - name: Download SNAPSHOT jar
+        uses: actions/download-artifact@v2
+        with:
+          name: snapshot-jar
+          path: Server/build/libs/
+      - name: Copy pem
+        env:
+          OCCUPY_PEM: ${{ secrets.OCCUPY_PEM }}
+        run:  |
+          echo "$OCCUPY_PEM" > Server/src/main/resources/prometheus.pem
+          chmod 400 Server/src/main/resources/prometheus.pem
       - name: Docker build
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
