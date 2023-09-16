@@ -107,11 +107,6 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew build -PdoNotRunTests
-      - name: Archive SNAPSHOT jar
-        uses: actions/upload-artifact@v2
-        with:
-          name: snapshot-jar
-          path: Server/build/libs/*-SNAPSHOT.jar
       - name: Wait for tests to complete
         run: |
           while [ ! -f "testA.done" ] || [ ! -f "testB.done" ] || [ ! -f "testC.done" ]; do
