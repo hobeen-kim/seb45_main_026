@@ -76,7 +76,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: snapshot-jar
-          path: build/libs/*-SNAPSHOT.jar
+          path: Server/build/libs/*-SNAPSHOT.jar
 
   cd:
     needs: 
