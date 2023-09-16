@@ -61,7 +61,6 @@ jobs:
           docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest
-          docker save -o /tmp/docker-layers/prometheus.tar prometheus:latest
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
         with:
