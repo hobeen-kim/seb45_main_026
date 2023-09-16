@@ -31,6 +31,7 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testA
+      - run: echo "done" > testA.done
           
   testB:
     runs-on: ubuntu-latest
@@ -55,6 +56,7 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testB
+      - run: echo "done" > testB.done
 
   testC:
     runs-on: ubuntu-latest
@@ -79,6 +81,7 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew testC
+      - run: echo "done" > testC.done
           
 
   build:
@@ -109,31 +112,12 @@ jobs:
         with:
           name: snapshot-jar
           path: Server/build/libs/*-SNAPSHOT.jar
-
-  cd:
-    needs: 
-    - testA
-    - testB
-    - testC
-    - build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: make dir
+      - name: Wait for tests to complete
         run: |
-          mkdir -p Server/build/libs
-      - name: Download SNAPSHOT jar
-        uses: actions/download-artifact@v2
-        with:
-          name: snapshot-jar
-          path: Server/build/libs/
-      - name: Copy pem
-        env:
-          OCCUPY_PEM: ${{ secrets.OCCUPY_PEM }}
-        run:  |
-          echo "$OCCUPY_PEM" > Server/src/main/resources/prometheus.pem
-          chmod 400 Server/src/main/resources/prometheus.pem
+          while [ ! -f "testA.done" ] || [ ! -f "testB.done" ] || [ ! -f "testC.done" ]; do
+            sleep 10
+          done
+          rm testA.done testB.done testC.done
       - name: Docker build
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
