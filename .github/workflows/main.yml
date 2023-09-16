@@ -59,24 +59,24 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
-      # - name: Execute command on EC2 instances
-      #   run: |
-      #     INSTANCE_DATA=$(aws ec2 describe-instances --filters "Name=tag:aws:autoscaling:groupName,Values=prometheus-asg" --query "Reservations[*].Instances[*].[InstanceId,State.Name]" --output text)
-      #     while read -r ID STATE; do
-      #       if [ "$STATE" == "running" ]; then
-      #         aws ssm send-command \
-      #         --instance-ids $ID \
-      #         --document-name "AWS-RunShellScript" \
-      #         --parameters commands="[
-      #           'if sudo docker ps -a --format \\'{{.Names}}\\' | grep -q \'^prometheus$\\'; then',
-      #           'sudo docker stop prometheus',
-      #           'sudo docker rm prometheus',
-      #           'fi',
-      #           'sudo docker pull sksjsksh32/prometheus:latest',
-      #           'sudo docker tag sksjsksh32/prometheus:latest prometheus',
-      #           'sudo docker image rm sksjsksh32/prometheus:latest',
-      #           'sudo docker image prune -f',
-      #           'sudo docker run -d -p 80:8080 --name prometheus -v /home/ubuntu/logs:/logs -e SPRING_PROFILES_ACTIVE=prod prometheus'
-      #         ]"
-      #       fi
-      #     done <<< "$INSTANCE_DATA"
+      - name: Execute command on EC2 instances
+        run: |
+          INSTANCE_DATA=$(aws ec2 describe-instances --filters "Name=tag:aws:autoscaling:groupName,Values=prometheus-asg" --query "Reservations[*].Instances[*].[InstanceId,State.Name]" --output text)
+          while read -r ID STATE; do
+            if [ "$STATE" == "running" ]; then
+              aws ssm send-command \
+              --instance-ids $ID \
+              --document-name "AWS-RunShellScript" \
+              --parameters commands="[
+                'if sudo docker ps -a --format \\'{{.Names}}\\' | grep -q \'^prometheus$\\'; then',
+                'sudo docker stop prometheus',
+                'sudo docker rm prometheus',
+                'fi',
+                'sudo docker pull sksjsksh32/prometheus:latest',
+                'sudo docker tag sksjsksh32/prometheus:latest prometheus',
+                'sudo docker image rm sksjsksh32/prometheus:latest',
+                'sudo docker image prune -f',
+                'sudo docker run -d -p 80:8080 --name prometheus -v /home/ubuntu/logs:/logs -e SPRING_PROFILES_ACTIVE=prod prometheus'
+              ]"
+            fi
+          done <<< "$INSTANCE_DATA"
