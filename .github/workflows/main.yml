@@ -99,11 +99,12 @@ jobs:
           cd Server
           chmod +x gradlew
           ./gradlew build -PdoNotRunTests
-      - name: Archive SNAPSHOT jar
-        uses: actions/upload-artifact@v2
-        with:
-          name: snapshot-jar
-          path: Server/build/libs/*-SNAPSHOT.jar
+      - name: Docker build
+        run: |
+          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
+          docker build -t prometheus -f Server/Dockerfile Server
+          docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
   cd:
     needs: 
     - testA
@@ -112,29 +113,11 @@ jobs:
     - build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: make dir
-        run: |
-          mkdir -p Server/build/libs
-      - name: Download SNAPSHOT jar
-        uses: actions/download-artifact@v2
-        with:
-          name: snapshot-jar
-          path: Server/build/libs/
-      - name: Copy pem
-        env:
-          OCCUPY_PEM: ${{ secrets.OCCUPY_PEM }}
-        run:  |
-          echo "$OCCUPY_PEM" > Server/src/main/resources/prometheus.pem
-          chmod 400 Server/src/main/resources/prometheus.pem
-      - name: Docker build
+      - name: Docker cd latest
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
-          docker build -t prometheus -f Server/Dockerfile Server
-          docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
-          docker tag prometheus ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7}
+          docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:${GITHUB_SHA::7} ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/prometheus:latest
       - name: Set up AWS CLI
         uses: aws-actions/configure-aws-credentials@v1
