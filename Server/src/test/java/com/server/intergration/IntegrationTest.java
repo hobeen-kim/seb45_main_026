@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -44,6 +45,7 @@ import com.server.domain.member.entity.Member;
 import com.server.domain.member.repository.MemberRepository;
 import com.server.domain.order.entity.Order;
 import com.server.domain.order.repository.OrderRepository;
+import com.server.domain.order.service.OrderService;
 import com.server.domain.question.entity.Question;
 import com.server.domain.question.repository.QuestionRepository;
 import com.server.domain.reply.entity.Reply;
@@ -62,6 +64,7 @@ import com.server.domain.watch.entity.Watch;
 import com.server.domain.watch.repository.WatchRepository;
 import com.server.global.reponse.ApiPageResponse;
 import com.server.global.reponse.ApiSingleResponse;
+import com.server.module.redis.service.RedisService;
 import com.server.module.s3.service.AwsService;
 import com.server.module.s3.service.dto.FileType;
 
@@ -100,6 +103,10 @@ public class IntegrationTest {
 
 	// Mock
 	@MockBean protected AwsService mockAwsService;
+
+	// 이메일 및 레디스
+	@Autowired protected RedisService redisService;
+	@Autowired protected StringRedisTemplate stringRedisTemplate;
 
 	protected void flushAll() {
 		memberRepository.flush();
@@ -188,6 +195,20 @@ public class IntegrationTest {
 		return memberRepository.save(member);
 	}
 
+	protected Member createAndSaveMemberWithEmailPasswordReward(String email, String password, int reward){
+
+		Member member = Member.builder()
+			.email(email)
+			.nickname(generateRandomString())
+			.password(passwordEncoder.encode(password))
+			.imageFile("imageFile")
+			.reward(reward)
+			.authority(Authority.ROLE_USER)
+			.build();
+
+		return memberRepository.save(member);
+	}
+
 	protected Member createMemberWithEmail(String email) {
 		Member member = Member.builder()
 			.email(email)
@@ -262,7 +283,7 @@ public class IntegrationTest {
 			.thumbnailFile("thumbnailFile")
 			.videoFile("videoFile")
 			.view(0)
-			.star(generateRandomStarFloat())
+			.star(0.0F)
 			.price(price)
 			.videoCategories(new ArrayList<>())
 			.videoStatus(VideoStatus.CREATED)
@@ -280,7 +301,7 @@ public class IntegrationTest {
 			.thumbnailFile("thumbnailFile")
 			.videoFile("videoFile")
 			.view(0)
-			.star(generateRandomStarFloat())
+			.star(0.0F)
 			.price(0)
 			.videoCategories(new ArrayList<>())
 			.videoStatus(VideoStatus.CREATED)
@@ -298,7 +319,7 @@ public class IntegrationTest {
 			.thumbnailFile("thumbnailFile")
 			.videoFile("videoFile")
 			.view(0)
-			.star(generateRandomStarFloat())
+			.star(0.0F)
 			.price(5000)
 			.videoCategories(new ArrayList<>())
 			.videoStatus(VideoStatus.CLOSED)
