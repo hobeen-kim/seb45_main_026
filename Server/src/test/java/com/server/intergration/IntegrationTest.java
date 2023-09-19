@@ -11,6 +11,7 @@ import java.util.Random;
 
 import javax.persistence.EntityManager;
 
+import com.server.domain.announcement.entity.Announcement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -105,8 +106,7 @@ public class IntegrationTest {
 	@MockBean protected AwsService mockAwsService;
 
 	// 이메일 및 레디스
-	@Autowired protected RedisService redisService;
-	@Autowired protected StringRedisTemplate stringRedisTemplate;
+	@MockBean protected RedisService redisService;
 
 	protected void flushAll() {
 		memberRepository.flush();
@@ -534,5 +534,14 @@ public class IntegrationTest {
 
 	private Integer generateRandomStarInteger() {
 		return new Random().nextInt(10) + 1;
+	}
+
+	Announcement createAndSaveAnnouncement(Channel channel) {
+		Announcement announcement = Announcement.builder()
+				.channel(channel)
+				.content("content")
+				.build();
+
+		return announcementRepository.save(announcement);
 	}
 }
