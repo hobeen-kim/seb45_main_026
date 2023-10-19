@@ -142,7 +142,7 @@ jobs:
                 'sudo docker tag sksjsksh32/prometheus:latest prometheus',
                 'sudo docker image rm sksjsksh32/prometheus:latest',
                 'sudo docker image prune -f',
-                'sudo docker run -d -p 80:8080 -p 9010:9010 --name prometheus -v /home/ubuntu/logs:/logs -e SPRING_PROFILES_ACTIVE=prod -e JAVA_OPTS="-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9010 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false" prometheus'
+                'sudo docker run -d -p 80:8080 -p 9010:9010 --name prometheus -v /home/ubuntu/logs:/logs -e SPRING_PROFILES_ACTIVE=prod -e JAVA_OPTS=\"-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9010 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false\" prometheus'
               ]"
             fi
           done <<< "$INSTANCE_DATA"
